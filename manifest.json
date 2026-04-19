@@ -1,0 +1,15 @@
+{
+  "name": "PhonePe",
+  "short_name": "PhonePe",
+  "start_url": "phonepe.html",
+  "display": "standalone",
+  "background_color": "#673ab7",
+  "theme_color": "#673ab7",
+  "icons": [
+    {
+      "src": "https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
