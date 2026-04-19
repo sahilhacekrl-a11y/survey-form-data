@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhonePe</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f5f6f7; user-select: none; }
+        .header { background: #673ab7; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .balance-section { background: white; margin: 10px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .amount { font-size: 28px; font-weight: bold; color: #212121; }
+        .btn-scan { background: #673ab7; color: white; width: 90%; margin: 20px 5%; padding: 15px; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; }
+        
+        #scanner-page, #pay-page, #success-page, #history-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 200; }
+        .fake-notif { display: none; position: fixed; top: 10px; width: 90%; left: 5%; background: #333; color: white; padding: 10px; border-radius: 8px; z-index: 1000; font-size: 12px; }
+        input { width: 80%; padding: 10px; font-size: 30px; border: none; border-bottom: 2px solid #673ab7; text-align: center; outline: none; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="notif" class="fake-notif"><b>Bank Alert:</b> ₹<span id="msg-amt">0</span> debited. New Bal: ₹5,40,70,500.00</div>
+
+<div id="home">
+    <div class="header"><span>PhonePe</span> <span onclick="showHistory()">HISTORY 🕒</span></div>
+    <div class="balance-section">
+        <div style="color: #757575; font-size: 12px;">Bank Balance</div>
+        <div class="amount">₹5,40,70,500.00</div>
+    </div>
+    <button class="btn-scan" onclick="openScanner()">SCAN & PAY</button>
+</div>
+
+<div id="scanner-page">
+    <div class="header"><span onclick="location.reload()">← Back</span></div>
+    <video id="video" style="width: 100%; height: 80vh; object-fit: cover; background: black;"></video>
+    <button onclick="mockScan()" style="width:100%; padding:20px; background:#000; color:#fff;">Scanning...</button>
+</div>
+
+<div id="pay-page" style="text-align:center;">
+    <div class="header"><span>Paying Sharma Store</span></div>
+    <input type="number" id="pay-amount" placeholder="₹0">
+    <button onclick="doPayment()" style="background:#673ab7; color:#fff; width:80%; padding:15px; border:none; border-radius:5px; margin-top:50px; font-weight:bold;">PROCEED TO PAY</button>
+</div>
+
+<div id="success-page" style="text-align:center;">
+    <img src="https://i.imgur.com/vHpxWfH.png" style="width:120px; margin-top:80px;">
+    <h2 style="color:#22b573;">Successful</h2>
+    <h1 id="final-amt">₹0</h1>
+    <button onclick="location.reload()" style="margin-top:100px; color:#673ab7; border:none; background:none; font-weight:bold;">DONE</button>
+</div>
+
+<div id="history-page">
+    <div class="header"><span onclick="location.reload()">← History</span></div>
+    <div id="h-list"></div>
+</div>
+
+<script>
+    // --- FIREBASE CONFIG (अपनी डिटेल्स यहाँ डालें) ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyA...", 
+        databaseURL: "https://your-app-default-rtdb.firebaseio.com",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function openScanner() {
+        document.getElementById('scanner-page').style.display = 'block';
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(s => { document.getElementById('video').srcObject = s; });
+    }
+
+    function mockScan() {
+        document.getElementById('scanner-page').style.display = 'none';
+        document.getElementById('pay-page').style.display = 'block';
+    }
+
+    function doPayment() {
+        let amt = document.getElementById('pay-amount').value;
+        if(!amt) return;
+
+        // 1. Firebase में सेव करें
+        db.ref('payments').push({
+            to: "Sharma General Store",
+            amount: amt,
+            time: new Date().toLocaleString()
+        });
+
+        // 2. साउंड बजाएं (PhonePe Tone)
+        let audio = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3'); // यहाँ आप असली साउंड लिंक भी बदल सकते हैं
+        audio.play();
+
+        // 3. UI बदलें
+        document.getElementById('pay-page').style.display = 'none';
+        document.getElementById('success-page').style.display = 'block';
+        document.getElementById('final-amt').innerText = "₹" + amt;
+
+        // 4. फेक मैसेज
+        document.getElementById('msg-amt').innerText = amt;
+        document.getElementById('notif').style.display = 'block';
+        setTimeout(() => { document.getElementById('notif').style.display = 'none'; }, 5000);
+    }
+
+    function showHistory() {
+        document.getElementById('home-page').style.display = 'none';
+        document.getElementById('history-page').style.display = 'block';
+        db.ref('payments').limitToLast(10).once('value', s => {
+            let list = document.getElementById('h-list');
+            list.innerHTML = "";
+            s.forEach(child => {
+                let v = child.val();
+                list.innerHTML += `<div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">
+                    <div><b>${v.to}</b><br><small>${v.time}</small></div>
+                    <div style="color:#22b573; font-weight:bold;">₹${v.amount}</div>
+                </div>`;
+            });
+        });
+    }
+</script>
+</body>
+</html>
